@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Title</title>
+    <link rel="stylesheet" type="text/css" href="{{ url_for('static',filename='styles/main.css') }}">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300&family=Roboto:wght@100;400&display=swap" rel="stylesheet">
+</head>
+<body>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.0.1/socket.io.js" integrity="sha512-q/dWJ3kcmjBLU4Qc47E4A9kTB4m3wuTY7vkFJDTZKjTs8jhyGQnaUrxa0Ytd0ssMZhbNua9hE+E7Qv1j+DyZwA==" crossorigin="anonymous"></script>
+    <script type="text/javascript" charset="utf-8">
+        var socket = io();
+
+
+        console.log(document.cookie)
+
+        var rand = function() {
+            return Math.random().toString(36).substr(2); // remove `0.`
+        };
+        let connected = false;
+
+        socket.on('connect', function() {
+            socket.emit('my event', {data: 'I\'m connected!'});
+        });
+
+
+        socket.on('chat_update', function(data) {
+            const wrappedArray = data.map(element => {
+                if(element["user"] === "system") {
+                    return '<div class="message Msystem"><div class="sender system">' + element["user"] + '</div> <pre class="message-content">' + element["message"] + "</pre></div>";
+                } else if(element["user"] === username){
+                    return '<div class="message Mself"><div class="sender self">' + element["user"] + '</div> <pre class="message-content">' + element["message"] + "</pre></div>";
+                } else{
+                    return '<div class="message"><div class="sender">' + element["user"] + '</div> <pre class="message-content">' + element["message"] + "</pre></div>";
+                }
+            });
+
+            const nestedElement = document.getElementById('chat-log');
+
+
+            document.getElementById("chat-log").innerHTML = wrappedArray.join("")
+
+            nestedElement.scrollBy(0, 100000);
+        });
+
+        socket.on('users_update', function(data) {
+            console.log(data)
+
+            const wrappedArray = data.map(element => {
+                if(element !== username) {
+                    return '<div class="player">' + element + "</div>";
+                } else{
+                    return '<div class="player self">' + element + "</div>";
+                }
+            });
+
+
+
+            document.getElementById("player-list").innerHTML = wrappedArray.join("")
+        });
+
+        let username = ""
+
+        function connect_player(){
+            const name = document.getElementById('name').value.trim()
+            if(name !== "system" && name !== "" && name !== " ") {
+                socket.emit("connect_user", {name: name})
+            }
+        }
+
+        socket.on('connected', function(data) {
+            document.getElementById("connect-message").innerHTML = "connected as : " + data
+            username = data
+            connected = true
+        });
+
+        function send_message(){
+            let message = document.getElementById("chatbox").value.trim()
+
+            console.log(message)
+
+            if(message !== "" && message !== " " && connected === true) {
+                socket.emit("send_message", {message: message})
+                document.getElementById("chatbox").value = ""
+            }
+        }
+
+        var element = document.querySelector('.no-script-execution');
+        element.setAttribute('nonce', nonce);
+
+    </script>
+
+
+    <h1 class="title">pychat</h1>
+
+    <div class="screen">
+        <div class="main">
+
+        </div>
+        <div class="menu">
+
+            type your name to join the chat
+            <div class="connect-menu">
+                <label>
+                    <input type="text" class="name no-script-execution" id="name">
+                </label>
+                <button type="submit" class="connect" name="connect" onclick="connect_player()">Connect</button>
+                <div class="connect-message no-script-execution" id="connect-message"></div>
+            </div>
+            <div class="connected-list">
+                <div class="connected-title">users connected :</div>
+                <div id="player-list" class="player-list no-script-execution">
+            </div>
+
+            </div>
+
+
+
+            <div class="chat">
+                <div class="chat-title">chat:</div>
+
+                <div class="chat-log no-script-execution" id="chat-log"></div>
+
+                <div class="chat-menu">
+                    <textarea class="chatbox" id="chatbox" onsubmit="send_message()"></textarea>
+                    <button type="submit" class="submitchat" onclick="send_message()" onsubmit="send_message()">
+                        <img src="https://static.thenounproject.com/png/3553333-200.png">
+                    </button>
+                </div>
+
+        </div>
+
+
+            </div>
+
+    </div>
+
+
+
+    <script>
+const textField = document.getElementById('chatbox');
+
+textField.addEventListener('keydown', function(event) {
+  if (event.key === 'Enter' && !event.shiftKey) {
+      send_message()
+      event.preventDefault()
+  }
+});
+
+const textField2 = document.getElementById('name');
+
+textField2.addEventListener('keydown', function(event) {
+  if (event.key === 'Enter') {
+    connect_player()
+
+  }
+});
+
+    </script>
+</body>
+</html>
